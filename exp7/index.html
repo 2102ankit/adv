@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js Insurance Data Visualizations</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        h2 {
+            text-align: left;
+            margin-top: 40px;
+            color: #555;
+        }
+        .chart {
+            margin-bottom: 50px;
+        }
+        .bar {
+            fill: #69b3a2;
+            transition: fill 0.3s;
+        }
+        .bar:hover {
+            fill: #407f7f;
+        }
+        .axis-label {
+            font-size: 14px;
+            text-anchor: middle;
+            fill: #333;
+        }
+        .dot {
+            fill: #4682b4;
+            opacity: 0.7;
+        }
+        .dot:hover {
+            fill: #1b4f72;
+            opacity: 1;
+        }
+        .line {
+            fill: none;
+            stroke: #ff5733;
+            stroke-width: 2px;
+        }
+        .pie-slice {
+            stroke: #fff;
+            stroke-width: 1px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Insurance Data Visualizations</h1>
+
+    <h2>1. Bar Chart: Distribution of Coverage</h2>
+    <div id="bar-chart" class="chart"></div>
+
+    <h2>2. Scatter Plot: Income vs. Monthly Premium</h2>
+    <div id="scatter-plot" class="chart"></div>
+
+    <h2>3. Pie Chart: Proportion of Policy Type</h2>
+    <div id="pie-chart" class="chart"></div>
+
+    <h2>4. Bubble Chart: Total Claim Amount vs. Customer Lifetime Value</h2>
+    <div id="bubble-chart" class="chart"></div>
+
+    <h2>5. Heatmap: Income vs. Total Claim Amount</h2>
+    <div id="heatmap" class="chart"></div>
+
+    <script>
+        d3.csv('AutoInsurance.csv').then(data => {
+            // Parse and clean data
+            data.forEach(d => {
+                d["Customer Lifetime Value"] = +d["Customer Lifetime Value"];
+                d["Monthly Premium Auto"] = +d["Monthly Premium Auto"];
+                d["Income"] = +d["Income"];
+                d["Months Since Last Claim"] = +d["Months Since Last Claim"];
+                d["Total Claim Amount"] = +d["Total Claim Amount"];
+            });
+
+            // Define dimensions
+            const margin = { top: 20, right: 30, bottom: 60, left: 60 };
+            const width = 600 - margin.left - margin.right;
+            const height = 400 - margin.top - margin.bottom;
+
+            // 1. Bar Chart: Distribution of 'Coverage'
+            const coverageData = d3.rollups(data, v => v.length, d => d.Coverage);
+            const svgBar = d3.select('#bar-chart')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+            const xBar = d3.scaleBand()
+                .domain(coverageData.map(d => d[0]))
+                .range([0, width])
+                .padding(0.2);
+            const yBar = d3.scaleLinear()
+                .domain([0, d3.max(coverageData, d => d[1])])
+                .nice()
+                .range([height, 0]);
+
+            svgBar.append('g')
+                .attr('transform', `translate(0, ${height})`)
+                .call(d3.axisBottom(xBar));
+            svgBar.append('g')
+                .call(d3.axisLeft(yBar));
+
+            // Add bars
+            svgBar.selectAll('.bar')
+                .data(coverageData)
+                .enter().append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => xBar(d[0]))
+                .attr('y', d => yBar(d[1]))
+                .attr('width', xBar.bandwidth())
+                .attr('height', d => height - yBar(d[1]));
+
+            // Add axis labels
+            svgBar.append('text')
+                .attr('x', width / 2)
+                .attr('y', height + 40)
+                .attr('class', 'axis-label')
+                .text('Coverage');
+            svgBar.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -40)
+                .attr('class', 'axis-label')
+                .text('Count');
+
+            // 2. Scatter Plot: Income vs. Monthly Premium
+            const svgScatter = d3.select('#scatter-plot')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+            const xScatter = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.Income)])
+                .nice()
+                .range([0, width]);
+            const yScatter = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d["Monthly Premium Auto"])])
+                .nice()
+                .range([height, 0]);
+
+            svgScatter.append('g')
+                .attr('transform', `translate(0, ${height})`)
+                .call(d3.axisBottom(xScatter));
+            svgScatter.append('g')
+                .call(d3.axisLeft(yScatter));
+
+            // Add dots
+            svgScatter.selectAll('.dot')
+                .data(data)
+                .enter().append('circle')
+                .attr('class', 'dot')
+                .attr('cx', d => xScatter(d.Income))
+                .attr('cy', d => yScatter(d["Monthly Premium Auto"]))
+                .attr('r', 5);
+
+            // Add axis labels
+            svgScatter.append('text')
+                .attr('x', width / 2)
+                .attr('y', height + 40)
+                .attr('class', 'axis-label')
+                .text('Income');
+            svgScatter.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -40)
+                .attr('class', 'axis-label')
+                .text('Monthly Premium');
+
+            // 3. Pie Chart: Proportion of 'Policy Type'
+            const policyData = d3.rollups(data, v => v.length, d => d["Policy Type"]);
+            const radius = Math.min(width, height) / 2;
+            const svgPie = d3.select('#pie-chart')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .append('g')
+                .attr('transform', `translate(${width / 2}, ${height / 2})`);
+
+            const pie = d3.pie().value(d => d[1]);
+            const arc = d3.arc()
+                .innerRadius(0)
+                .outerRadius(radius);
+
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const arcs = svgPie.selectAll('path')
+                .data(pie(policyData))
+                .enter().append('path')
+                .attr('class', 'pie-slice')
+                .attr('d', arc)
+                .attr('fill', d => color(d.data[0]));
+
+            // Add text labels with percentages
+            svgPie.selectAll('text')
+                .data(pie(policyData))
+                .enter().append('text')
+                .attr('transform', d => `translate(${arc.centroid(d)})`)
+                .attr('text-anchor', 'middle')
+                .attr('class', 'pie-label')
+                .text(d => `${d.data[0]} (${((d.data[1] / d3.sum(policyData, d => d[1])) * 100).toFixed(1)}%)`)
+                .style('fill', '#fff')
+                .style('font-size', '12px');
+
+
+            // 4. Bubble Chart: Total Claim Amount vs. Customer Lifetime Value
+            const svgBubble = d3.select('#bubble-chart')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+            const xBubble = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d["Total Claim Amount"])])
+                .nice()
+                .range([0, width]);
+            const yBubble = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d["Customer Lifetime Value"])])
+                .nice()
+                .range([height, 0]);
+
+            svgBubble.append('g')
+                .attr('transform', `translate(0, ${height})`)
+                .call(d3.axisBottom(xBubble));
+            svgBubble.append('g')
+                .call(d3.axisLeft(yBubble));
+
+            svgBubble.selectAll('.bubble')
+                .data(data)
+                .enter().append('circle')
+                .attr('class', 'bubble')
+                .attr('cx', d => xBubble(d["Total Claim Amount"]))
+                .attr('cy', d => yBubble(d["Customer Lifetime Value"]))
+                .attr('r', d => d["Monthly Premium Auto"] / 20)
+                .attr('fill', 'purple')
+                .attr('opacity', 0.6);
+
+            // Add axis labels
+            svgBubble.append('text')
+                .attr('x', width / 2)
+                .attr('y', height + 40)
+                .attr('class', 'axis-label')
+                .text('Total Claim Amount');
+            svgBubble.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', -50)
+                .attr('class', 'axis-label')
+                .text('Customer Lifetime Value');
+
+            //5. Heatmap: Income vs. Total Claim Amount
+            const svgHeatmap = d3.select('#heatmap')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', `translate(${margin.left}, ${margin.top})`);
+
+            const xHeatmap = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d["Income"])])
+                .nice()
+                .range([0, width]);
+
+            const yHeatmap = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d["Total Claim Amount"])])
+                .nice()
+                .range([height, 0]);
+
+            // Define color scale for heatmap cells
+            const colorScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d["Total Claim Amount"])])
+                .range(["#f9f9f9", "#69b3a2"]);
+
+            // Add heatmap cells with color based on "Total Claim Amount"
+            svgHeatmap.selectAll(".heatmap-cell")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "heatmap-cell")
+                .attr("x", d => xHeatmap(d["Income"]))
+                .attr("y", d => yHeatmap(d["Total Claim Amount"]))
+                .attr("width", width / 10)
+                .attr("height", height / 10)
+                .style("fill", d => colorScale(d["Total Claim Amount"]))
+                .style("opacity", 0.6);
+
+            // Add X-axis for Income
+            svgHeatmap.append("g")
+                .attr("transform", `translate(0, ${height})`)
+                .call(d3.axisBottom(xHeatmap))
+                .append("text")
+                .attr("x", width / 2)
+                .attr("y", 40)
+                .attr("class", "axis-label")
+                .text("Income");
+
+            // Add Y-axis for Total Claim Amount
+            svgHeatmap.append("g")
+                .call(d3.axisLeft(yHeatmap))
+                .append("text")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", -40)
+                .attr("class", "axis-label")
+                .text("Total Claim Amount");
+
+        });
+    </script>
+</body>
+</html>
