@@ -1,0 +1,223 @@
+<!-- in this code can you just add description for the pie chart. Only give me modification for that part & not the complete code -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Dashboard for Tree Cover Analysis</title>
+    <style>
+        .chart-container {
+            margin-bottom: 50px;
+            text-align: center;
+        }
+        svg {
+            border: 1px solid #ccc;
+            display: block;
+            margin: 0 auto;
+        }
+        h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <h1>Interactive Dashboard for Tree Cover Data Analysis</h1>
+
+    <!-- Container for Bar Chart -->
+    <div id="bar-chart" class="chart-container">
+        <h2>Tree Cover Loss (2001-2022) - Bar Chart</h2>
+    </div>
+
+    <!-- Container for Pie Chart -->
+     <div class="" style="display: flex;">
+        <div id="pie-chart" class="chart-container">
+            <h2>Tree Cover Loss Proportion (2001-2022) - Pie Chart</h2>
+        </div>
+        <div class="">
+
+            <div id="pie-chart-legend" class="chart-container" style="max-height: 450px; overflow-y: scroll;">
+                <h2>Tree Cover Loss Proportion (2001-2022) - Pie Chart</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container for Scatter Plot -->
+    <div id="scatter-plot" class="chart-container">
+        <h2>Tree Cover Gain vs Loss - Scatter Plot</h2>
+    </div>
+
+    <!-- Container for Timeline Chart -->
+    <div id="timeline-chart" class="chart-container">
+        <h2>Tree Cover Loss Over Time - Timeline Chart</h2>
+    </div>
+
+    <script>
+        d3.csv('Cover.csv').then(data => {
+            console.log("Parsed Data:", data);
+
+            const width = 800;
+            const height = 400;
+            const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+
+            // Bar Chart: Total Tree Cover Loss per Year
+            const barChartData = data[0];
+            const lossYears = Object.keys(barChartData).filter(key => key.startsWith("tc_loss_ha_"));
+            const lossValues = lossYears.map(year => ({
+                year: +year.replace("tc_loss_ha_", ""),
+                loss: +barChartData[year]
+            }));
+
+            const xBar = d3.scaleBand()
+                .domain(lossValues.map(d => d.year))
+                .range([margin.left, width - margin.right])
+                .padding(0.1);
+
+            const yBar = d3.scaleLinear()
+                .domain([0, d3.max(lossValues, d => d.loss)]).nice()
+                .range([height - margin.bottom, margin.top]);
+
+            const barSvg = d3.select("#bar-chart").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            barSvg.append("g")
+                .selectAll("rect")
+                .data(lossValues)
+                .enter().append("rect")
+                .attr("x", d => xBar(d.year))
+                .attr("y", d => yBar(d.loss))
+                .attr("height", d => yBar(0) - yBar(d.loss))
+                .attr("width", xBar.bandwidth())
+                .attr("fill", "steelblue");
+
+            barSvg.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(xBar).tickFormat(d3.format("d")))
+                .attr("font-size", "12px");
+
+            barSvg.append("g")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(yBar))
+                .attr("font-size", "12px");
+
+            // Pie Chart: Proportion of Tree Cover Loss (2001-2022)
+            const totalLoss = lossValues.reduce((sum, d) => sum + d.loss, 0);
+            const pieData = lossValues.map(d => ({ ...d, proportion: d.loss / totalLoss }));
+
+            const radius = Math.min(width, height) / 2 - margin.top;
+            const pieSvg = d3.select("#pie-chart").append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+            const pie = d3.pie().value(d => d.proportion);
+            const arc = d3.arc().innerRadius(0).outerRadius(radius);
+
+            pieSvg.selectAll("path")
+                .data(pie(pieData))
+                .enter().append("path")
+                .attr("d", arc)
+                .attr("fill", (d, i) => d3.schemeCategory10[i % 10])
+                .attr("stroke", "white")
+                .attr("stroke-width", "2px");
+
+                const legendContainer = d3.select("#pie-chart-legend").append("div")
+    .style("display", "inline-block")
+    .style("padding-left", "20px")
+    .style("vertical-align", "top");
+
+legendContainer.append("h3").text("Pie Chart Legend");
+
+const legend = legendContainer.selectAll(".legend")
+    .data(pieData)
+    .enter().append("div")
+    .attr("class", "legend")
+    .style("margin-bottom", "10px");
+
+legend.append("div")
+    .style("width", "20px")
+    .style("height", "20px")
+    .style("background-color", (d, i) => d3.schemeCategory10[i % 10])
+    .style("display", "inline-block")
+    .style("margin-right", "10px");
+
+legend.append("span")
+    .text(d => `${d.year}: ${(d.proportion * 100).toFixed(2)}%`);
+
+            // Scatter Plot: Gain vs Loss
+            const scatterSvg = d3.select("#scatter-plot").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            const scatterData = data.map(d => ({
+                gain: +d["gain_2000-2020_ha"],
+                totalLoss: lossYears.reduce((sum, year) => sum + (+d[year] || 0), 0)
+            }));
+
+            const xScatter = d3.scaleLinear()
+                .domain([0, d3.max(scatterData, d => d.gain)]).nice()
+                .range([margin.left, width - margin.right]);
+
+            const yScatter = d3.scaleLinear()
+                .domain([0, d3.max(scatterData, d => d.totalLoss)]).nice()
+                .range([height - margin.bottom, margin.top]);
+
+            scatterSvg.append("g")
+                .selectAll("circle")
+                .data(scatterData)
+                .enter().append("circle")
+                .attr("cx", d => xScatter(d.gain))
+                .attr("cy", d => yScatter(d.totalLoss))
+                .attr("r", 5)
+                .attr("fill", "orange");
+
+            scatterSvg.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(xScatter).ticks(10))
+                .attr("font-size", "12px");
+
+            scatterSvg.append("g")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(yScatter).ticks(10))
+                .attr("font-size", "12px");
+
+            // Timeline Chart: Tree Cover Loss Over Time
+            const timelineSvg = d3.select("#timeline-chart").append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            const xTimeline = d3.scaleTime()
+                .domain(d3.extent(lossValues, d => new Date(d.year, 0)))
+                .range([margin.left, width - margin.right]);
+
+            const yTimeline = d3.scaleLinear()
+                .domain([0, d3.max(lossValues, d => d.loss)]).nice()
+                .range([height - margin.bottom, margin.top]);
+
+            const line = d3.line()
+                .x(d => xTimeline(new Date(d.year, 0)))
+                .y(d => yTimeline(d.loss));
+
+            timelineSvg.append("path")
+                .datum(lossValues)
+                .attr("fill", "none")
+                .attr("stroke", "green")
+                .attr("stroke-width", 2)
+                .attr("d", line);
+
+            timelineSvg.append("g")
+                .attr("transform", `translate(0,${height - margin.bottom})`)
+                .call(d3.axisBottom(xTimeline).ticks(d3.timeYear.every(1)).tickFormat(d3.timeFormat("%Y")))
+                .attr("font-size", "12px");
+
+            timelineSvg.append("g")
+                .attr("transform", `translate(${margin.left},0)`)
+                .call(d3.axisLeft(yTimeline))
+                .attr("font-size", "12px");
+        });
+    </script>
+</body>
+</html>
