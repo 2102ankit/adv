@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Educational Data Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .chart {
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .chart-description {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Educational Data Dashboard</h1>
+        <div class="chart">
+            <div class="chart-title">1. Enrollment Trends Over Time</div>
+            <div class="chart-description">This line chart shows the enrollment trends across different states over the years, helping to identify patterns and changes in student population.</div>
+            <div id="enrollmentTrends"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">2. Revenue Sources Distribution</div>
+            <div class="chart-description">This pie chart displays the average distribution of revenue sources (federal, state, and local) across all states and years, providing insights into funding patterns.</div>
+            <div id="revenueSources"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">3. Expenditure Categories</div>
+            <div class="chart-description">This stacked bar chart compares different expenditure categories across states, helping to understand how educational funds are allocated.</div>
+            <div id="expenditureCategories"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">4. Math and Reading Scores Comparison</div>
+            <div class="chart-description">This scatter plot compares average math and reading scores for 4th and 8th grades, revealing potential correlations between these subjects.</div>
+            <div id="scoreComparison"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">5. Enrollment Distribution by Grade</div>
+            <div class="chart-description">This histogram shows the distribution of enrollment across different grade levels, highlighting patterns in student population by age group.</div>
+            <div id="gradeDistribution"></div>
+        </div>
+        <!-- <div class="chart">
+            <div class="chart-title">6. Per-Student Expenditure vs. Test Scores</div>
+            <div class="chart-description">This bubble plot examines the relationship between per-student expenditure and average test scores, with bubble size representing enrollment.</div>
+            <div id="expenditureVsScores"></div>
+        </div> -->
+        <div class="chart">
+            <div class="chart-title">6. State Revenue vs. Local Revenue</div>
+            <div class="chart-description">This box and whisker plot compares the distribution of state and local revenue across all states and years, showing funding variability.</div>
+            <div id="revenueComparison"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">7. Enrollment vs. Total Revenue</div>
+            <div class="chart-description">This regression plot explores the relationship between enrollment and total revenue, helping to understand funding allocation based on student population.</div>
+            <div id="enrollmentVsRevenue"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">8. Test Score Trends</div>
+            <div class="chart-description">This 3D scatter plot visualizes the trends in math and reading scores for 4th and 8th grades over time, providing a comprehensive view of academic performance.</div>
+            <div id="testScoreTrends"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">9. State Performance Comparison</div>
+            <div class="chart-description">This violin plot compares the distribution of average math and reading scores across states, highlighting performance variations.</div>
+            <div id="statePerformance"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">10. Education Funding Flow (Sankey Chart)</div>
+            <div class="chart-description">This Sankey chart illustrates the flow of education funding from different sources to expenditure categories.</div>
+            <div id="fundingFlow"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">11. State Revenue Trends (Line Race Chart)</div>
+            <div class="chart-description">This line race chart shows the changing revenue trends across different states over time.</div>
+            <div id="revenueRace"></div>
+        </div>
+        <div class="chart">
+            <div class="chart-title">12. Grade Level Distribution Over Time (Stacked Column Chart)</div>
+            <div class="chart-description">This stacked column chart displays the distribution of students across different grade levels for each year.</div>
+            <div id="gradeDistributionOverTime"></div>
+        </div>
+        <!-- <div class="chart">
+            <div class="chart-title">14. Average Math Scores by State (USA Map Chart)</div>
+            <div class="chart-description">This map chart of the USA shows the average math scores for 4th, 8th, and 12th grade students in each state.</div>
+            <div id="mathScoresMap"></div>
+        </div> -->
+    </div>
+    <script src="dashboard.js"></script>
+</body>
+</html>
