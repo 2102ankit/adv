@@ -14,7 +14,12 @@ function getUniqueValues(arr) {
 
 // Helper function to calculate average
 function average(arr) {
-  return arr.reduce((a, b) => a + b, 0) / arr.length;
+  const validNumbers = arr.filter(
+    (num) => typeof num === "number" && !isNaN(num)
+  );
+  return validNumbers.length > 0
+    ? validNumbers.reduce((a, b) => a + b, 0) / validNumbers.length
+    : 0;
 }
 
 // Main function to create visualizations
@@ -94,25 +99,24 @@ async function createVisualizations() {
   });
 
   // 4. Math and Reading Scores Comparison
-  const scoreData = data
-    .map((d) => ({
-      x: parseFloat(d.AVG_MATH_4_SCORE) || 0,
-      y: parseFloat(d.AVG_READING_4_SCORE) || 0,
-      text: `${d.STATE} (${d.YEAR})`,
+  const scoreData = [
+    {
+      x: data.map((d) => parseFloat(d.AVG_MATH_4_SCORE) || 0),
+      y: data.map((d) => parseFloat(d.AVG_READING_4_SCORE) || 0),
+      text: data.map((d) => `${d.STATE} (${d.YEAR})`),
       mode: "markers",
       type: "scatter",
       name: "4th Grade",
-    }))
-    .concat(
-      data.map((d) => ({
-        x: parseFloat(d.AVG_MATH_8_SCORE) || 0,
-        y: parseFloat(d.AVG_READING_8_SCORE) || 0,
-        text: `${d.STATE} (${d.YEAR})`,
-        mode: "markers",
-        type: "scatter",
-        name: "8th Grade",
-      }))
-    );
+    },
+    {
+      x: data.map((d) => parseFloat(d.AVG_MATH_8_SCORE) || 0),
+      y: data.map((d) => parseFloat(d.AVG_READING_8_SCORE) || 0),
+      text: data.map((d) => `${d.STATE} (${d.YEAR})`),
+      mode: "markers",
+      type: "scatter",
+      name: "8th Grade",
+    },
+  ];
 
   Plotly.newPlot("scoreComparison", scoreData, {
     title: "Math vs Reading Scores",
@@ -155,6 +159,7 @@ async function createVisualizations() {
         2 || 0,
     text: `${d.STATE} (${d.YEAR})`,
     mode: "markers",
+    type: "scatter",
     marker: {
       size: parseFloat(d.ENROLL) / 1000,
       sizemode: "area",
@@ -197,43 +202,31 @@ async function createVisualizations() {
   );
 
   // 8. Enrollment vs. Total Revenue
-  const enrollmentVsRevenueData = data.map((d) => ({
-    x: parseFloat(d.ENROLL) || 0,
-    y: parseFloat(d.TOTAL_REVENUE) || 0,
-    text: `${d.STATE} (${d.YEAR})`,
+  const enrollmentVsRevenueData = {
+    x: data.map((d) => parseFloat(d.ENROLL) || 0),
+    y: data.map((d) => parseFloat(d.TOTAL_REVENUE) || 0),
+    text: data.map((d) => `${d.STATE} (${d.YEAR})`),
     mode: "markers",
-  }));
+    type: "scatter",
+    name: "Data Points",
+  };
 
   Plotly.newPlot("enrollmentVsRevenue", [enrollmentVsRevenueData], {
     title: "Enrollment vs. Total Revenue",
     xaxis: { title: "Enrollment" },
     yaxis: { title: "Total Revenue" },
-  }).then(() => {
-    const xValues = enrollmentVsRevenueData.map((d) => d.x);
-    const yValues = enrollmentVsRevenueData.map((d) => d.y);
-    const result = regression.linear(xValues.map((x, i) => [x, yValues[i]]));
-    const regressionLine = {
-      x: [Math.min(...xValues), Math.max(...xValues)],
-      y: result
-        .predict(Math.min(...xValues))
-        .concat(result.predict(Math.max(...xValues))),
-      mode: "lines",
-      line: { color: "red" },
-      name: "Regression Line",
-    };
-    Plotly.addTraces("enrollmentVsRevenue", regressionLine);
   });
 
   // 9. Test Score Trends
-  const scoresTrends = data.map((d) => ({
-    x: parseFloat(d.AVG_MATH_4_SCORE) || 0,
-    y: parseFloat(d.AVG_READING_4_SCORE) || 0,
-    z: parseFloat(d.YEAR),
-    text: `${d.STATE} (${d.YEAR})`,
+  const scoresTrends = {
+    x: data.map((d) => parseFloat(d.AVG_MATH_4_SCORE) || 0),
+    y: data.map((d) => parseFloat(d.AVG_READING_4_SCORE) || 0),
+    z: data.map((d) => parseFloat(d.YEAR) || 0),
+    text: data.map((d) => `${d.STATE} (${d.YEAR})`),
     mode: "markers",
     type: "scatter3d",
     marker: { size: 5 },
-  }));
+  };
 
   Plotly.newPlot("testScoreTrends", [scoresTrends], {
     title: "Test Score Trends (4th Grade)",
@@ -262,6 +255,220 @@ async function createVisualizations() {
     title:
       "State Performance Comparison (Average of 4th Grade Math and Reading Scores)",
     yaxis: { title: "Average Score" },
+  });
+
+  // 11. Education Funding Flow (Sankey Chart)
+  const fundingFlowData = {
+    node: {
+      label: [
+        "Federal Revenue",
+        "State Revenue",
+        "Local Revenue",
+        "Instruction",
+        "Support Services",
+        "Other",
+        "Capital Outlay",
+      ],
+      color: [
+        "#1f77b4",
+        "#2ca02c",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#e377c2",
+        "#7f7f7f",
+      ],
+    },
+    link: {
+      source: [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2],
+      target: [3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6],
+      value: data
+        .map((d) => [
+          parseFloat(d.FEDERAL_REVENUE) * 0.6,
+          parseFloat(d.STATE_REVENUE) * 0.6,
+          parseFloat(d.LOCAL_REVENUE) * 0.6,
+          parseFloat(d.FEDERAL_REVENUE) * 0.3,
+          parseFloat(d.STATE_REVENUE) * 0.3,
+          parseFloat(d.LOCAL_REVENUE) * 0.3,
+          parseFloat(d.FEDERAL_REVENUE) * 0.05,
+          parseFloat(d.STATE_REVENUE) * 0.05,
+          parseFloat(d.LOCAL_REVENUE) * 0.05,
+          parseFloat(d.FEDERAL_REVENUE) * 0.05,
+          parseFloat(d.STATE_REVENUE) * 0.05,
+          parseFloat(d.LOCAL_REVENUE) * 0.05,
+        ])
+        .reduce((acc, curr) => curr.map((num, i) => (acc[i] || 0) + num), []),
+    },
+  };
+
+  Plotly.newPlot("fundingFlow", [fundingFlowData], {
+    title: "Education Funding Flow",
+    type: "sankey",
+    orientation: "h",
+  });
+
+  // 12. State Enrollment Trends (Line Race Chart)
+  const enrollmentRaceData = states.map((state) => ({
+    x: years,
+    y: years.map((year) => {
+      const entry = data.find((d) => d.STATE === state && d.YEAR === year);
+      return entry ? parseFloat(entry.ENROLL) : null;
+    }),
+    name: state,
+    mode: "lines",
+    type: "scatter",
+  }));
+
+  Plotly.newPlot("enrollmentRace", enrollmentRaceData, {
+    title: "State Enrollment Trends",
+    xaxis: { title: "Year" },
+    yaxis: { title: "Enrollment" },
+    updatemenus: [
+      {
+        x: 0.1,
+        y: 1.15,
+        yanchor: "top",
+        buttons: [
+          {
+            method: "animate",
+            args: [
+              null,
+              {
+                mode: "immediate",
+                fromcurrent: true,
+                transition: { duration: 300 },
+                frame: { duration: 500, redraw: false },
+              },
+            ],
+            label: "Play",
+          },
+          {
+            method: "animate",
+            args: [
+              [null],
+              {
+                mode: "immediate",
+                transition: { duration: 0 },
+                frame: { duration: 0, redraw: false },
+              },
+            ],
+            label: "Pause",
+          },
+        ],
+      },
+    ],
+    sliders: [
+      {
+        steps: years.map((year, index) => ({
+          method: "animate",
+          label: year,
+          args: [
+            [year],
+            {
+              mode: "immediate",
+              transition: { duration: 300 },
+              frame: { duration: 300, redraw: false },
+            },
+          ],
+        })),
+        x: 0.1,
+        y: 0,
+        currentvalue: {
+          visible: true,
+          prefix: "Year:",
+          xanchor: "right",
+          font: { size: 20, color: "#666" },
+        },
+      },
+    ],
+  });
+
+  // 13. Grade Level Distribution Over Time (Stacked Column Chart)
+  const gradeDistributionData = years
+    .map((year) => {
+      const yearData = data.filter((d) => d.YEAR === year);
+      return {
+        x: [year],
+        y: [average(yearData.map((d) => parseFloat(d.GRADES_PK_G) || 0))],
+        name: "Pre-K",
+        type: "bar",
+      };
+    })
+    .concat(
+      years.map((year) => {
+        const yearData = data.filter((d) => d.YEAR === year);
+        return {
+          x: [year],
+          y: [average(yearData.map((d) => parseFloat(d.GRADES_KG_G) || 0))],
+          name: "Kindergarten",
+          type: "bar",
+        };
+      })
+    )
+    .concat(
+      years.map((year) => {
+        const yearData = data.filter((d) => d.YEAR === year);
+        return {
+          x: [year],
+          y: [average(yearData.map((d) => parseFloat(d.GRADES_4_G) || 0))],
+          name: "4th Grade",
+          type: "bar",
+        };
+      })
+    )
+    .concat(
+      years.map((year) => {
+        const yearData = data.filter((d) => d.YEAR === year);
+        return {
+          x: [year],
+          y: [average(yearData.map((d) => parseFloat(d.GRADES_8_G) || 0))],
+          name: "8th Grade",
+          type: "bar",
+        };
+      })
+    )
+    .concat(
+      years.map((year) => {
+        const yearData = data.filter((d) => d.YEAR === year);
+        return {
+          x: [year],
+          y: [average(yearData.map((d) => parseFloat(d.GRADES_12_G) || 0))],
+          name: "12th Grade",
+          type: "bar",
+        };
+      })
+    );
+
+  Plotly.newPlot("gradeDistributionOverTime", gradeDistributionData, {
+    title: "Grade Level Distribution Over Time",
+    barmode: "stack",
+    xaxis: { title: "Year" },
+    yaxis: { title: "Average Number of Students" },
+  });
+
+  // 14. Average Math Scores by State (USA Map Chart)
+  const latestYear = Math.max(...years);
+  const latestData = data.filter((d) => d.YEAR === latestYear);
+
+  const mathScoresMapData = [
+    {
+      type: "choropleth",
+      locationmode: "USA-states",
+      locations: latestData.map((d) => d.STATE),
+      z: latestData.map((d) => parseFloat(d.AVG_MATH_4_SCORE) || 0),
+      text: latestData.map((d) => `${d.STATE}: ${d.AVG_MATH_4_SCORE}`),
+      colorscale: "Viridis",
+      colorbar: { title: "Average Math Score" },
+    },
+  ];
+
+  Plotly.newPlot("mathScoresMap", mathScoresMapData, {
+    title: `Average 4th Grade Math Scores by State (${latestYear})`,
+    geo: {
+      scope: "usa",
+      showlakes: true,
+      lakecolor: "rgb(255,255,255)",
+    },
   });
 }
 
